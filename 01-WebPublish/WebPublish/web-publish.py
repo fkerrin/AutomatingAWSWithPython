@@ -1,13 +1,15 @@
 # This is part of the AcloudGuru course "Automating AWS with Python
 # This project is to synchrronise a website to S3 for diistribution over CloudFront
 
-import boto3
-import click
+import boto3  # AWS API
+import click  # Command line functionality through function decorators
+from mimetypes import guess_type  # To determine the content type being uploaded to S3
 from botocore.exceptions import ClientError  # To catch errors raised through the API
+from pathlib import Path, PurePosixPath  # To allow extraction of files and subdirectories to uploa to S3
 
-MySession = boto3.Session(profile_name = 'PythonUser')
+MySession = boto3.Session(profile_name = 'PythonUser')  # Create session with AWS
 
-S3 = MySession.resource('s3')
+S3 = MySession.resource('s3')  # Create S3 resource object
 
 @click.group()
 def CLI():
@@ -27,7 +29,7 @@ def ListBucketObjects(bucket):
     for Object in S3.Bucket(bucket).objects.all():
 	    print(Object)
 
-@CLI.command('SetupBucket')
+@CLI.command('SetUpBucket')
 @click.argument('bucket')  # Bucket name must be specifieed by a command line argument
 def SetUpBucket(bucket):
     'Set up S3 bucket to host wehsite'
@@ -73,6 +75,33 @@ def SetUpBucket(bucket):
     print(URL)
 	
     return
+
+@CLI.command('SyncWebFiles')
+@click.argument('path_name', type = click.Path(exists = True))  # Click will check validity of the input path name
+@click.argument('bucket_name')  # S3 bucket to upload the files to
+def sync_webfiles_to_s3(path_name, bucket_name):
+    "Sync contents of PATH_NAME to BUCKET_NAME"  # Click will prompt if path_name is incorrect but prints it out in CAPS
+
+    MyPath = Path(path_name)
+    WebRoot = MyPath.expanduser().resolve()  # Expands full path and handles the case where the user puts ~/ rather than /Users/xxx/
+    WebBucket = S3.Bucket(bucket_name)
+
+# The path supplid should be the root of the website files (index.html should be in the root) go through all these and copy to S3	
+    def RecurseDirectory(start_path):
+        for Object in start_path.iterdir():
+            if Object.is_dir():
+                RecurseDirectory(Object)  # Continue to iterate through subdirectories
+            if Object.is_file():
+                LocalPath = str(Object)
+                Key = str(PurePosixPath(Object.relative_to(WebRoot)))  # S3 won't be able to deal with Windows backslashes
+                content_type = guess_type(Key)[0] or 'text/plain'  # Default assigned if mimetypes cannot guess type
+                WebBucket.upload_file(LocalPath, Key, ExtraArgs = {'ContentType' : content_type})  # Key is what will be sent to S3 - Subdirs/File
+        return
+    
+    RecurseDirectory(WebRoot)
+
+    return
+	
 
 if __name__ == '__main__':
     CLI()  # Delegates control of the functions to teh CLI command group - click will manage the flow
