@@ -12,26 +12,34 @@ web-publish automates the process of deploying static websites to AWS
 """
 
 from s3_bucket import BucketHandler
-
-# Use guess_type to determine the content type being uploaded to S3
-from mimetypes import guess_type
-# Use pathlib to allow extraction of files and subdirectories to uploa to S3
-from pathlib import Path, PurePosixPath
 import boto3  # AWS API
-from botocore.exceptions import ClientError  # Catch errors raised through API
 import click  # Command line functionality through function decorators
 
 
 @click.group()
-def CLI():
+@click.option('--profile', default = None,
+    help = 'Supply a valid AWS profile name for account')
+def CLI(profile):
     """Publish website to S3"""  # Docstring is the command description (--help option)
-    pass
+    
+    global AWSSession, bucket_handler
+    """Need global to ensure we modify the global versions and not create new
+    variables that would not be accessible to our other functons."""
+
+    session_config = {}  # dict onject to be passed to boto3 below
+    if profile:
+        session_config['profile_name'] = profile
+
+    # Create session with AWS
+    AWSSession = boto3.Session(**session_config)
+    # Create an instance of the BucketHandler class
+    bucket_handler = BucketHandler(AWSSession)
 
 
 @CLI.command('ListBuckets')  # This string is the command to use with the script
 def ListBuckets():
     """Lists all S3 Buckets in Account"""  # Docstring shows in the Command description
-    for Bucket in BucketHandler(AWSSession).AllBuckets():
+    for Bucket in bucket_handler.AllBuckets():
         print(Bucket)
     return
 
@@ -40,7 +48,7 @@ def ListBuckets():
 @click.argument('bucket')
 def ListBucketObjects(bucket):
     """Lists objects in S3 buckets"""
-    for Object in BucketHandler(AWSSession).AllObjects(bucket):
+    for Object in bucket_handler.AllObjects(bucket):
         print(Object)
     return
 
@@ -51,13 +59,13 @@ def SetUpBucket(bucket):
     """Set up S3 bucket to host wehsite"""
 
     # Create the new bucket from the name provided
-    NewBucket = BucketHandler(AWSSession).CreateBucket(bucket, AWSSession)
+    NewBucket = bucket_handler.CreateBucket(bucket, AWSSession)
 
 	# Now we need to create a bucket policy for web hosting permissions (copy from AWS documents on S3 web hosting)
-    BucketHandler(AWSSession).SetBucketPolicy(NewBucket)
+    bucket_handler.SetBucketPolicy(NewBucket)
 
     # Set up web hosting on bucket and get the static website URL
-    URL = BucketHandler(AWSSession).SetBucketWebHosting(NewBucket, AWSSession)
+    URL = bucket_handler.SetBucketWebHosting(NewBucket, AWSSession)
     print('The website URL is:  ', URL)
     
     return
@@ -68,21 +76,19 @@ def SetUpBucket(bucket):
 @click.argument('bucket_name')  # S3 bucket to upload the files to
 def SyncWebfilesToS3(path_name, bucket_name):
     """Sync contents of PATH_NAME to BUCKET_NAME"""
-# Click will prompt if path_name is incorrect but prints it out in CAPS so want the message to match
+    # Click will prompt if path_name is incorrect but prints it out in CAPS so want the message to match
 
-    WebRoot = Path(path_name).expanduser().resolve()
-    """This expands full path of the root for the web files and
-    handles the case where the user puts ~/ rather than /Users/xxx/"""
-
-    BucketHandler(AWSSession).CopyContentsToS3(WebRoot, bucket_name)
+    bucket_handler.CopyContentsToS3(path_name, bucket_name)
 
     return
 
 
 if __name__ == '__main__':
 
-    # Create session with AWS
-    AWSSession = boto3.Session(profile_name = 'PythonUser')
+    """ Create globaal variables for AWS session and bucket resource to be
+   set up and utilised by all functions in the script"""
+    AWSSession = None
+    bucket_handler = None
 
     CLI()
     """This delegates control of the functions	to the CLI command group
