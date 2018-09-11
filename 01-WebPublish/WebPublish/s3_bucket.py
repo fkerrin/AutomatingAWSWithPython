@@ -78,14 +78,21 @@ class BucketHandler:
         Bucket.Policy().put(Policy = BucketPolicy)
         return
 
+		
+    def GetBucketRegion(self, BucketName):
+        """Return the region of a bucket."""
+		
+        bucket_location = self.S3.meta.client.get_bucket_location(Bucket = BucketName)
+
+        return bucket_location['LocationConstraint'] or 'us-east-1'
+        # Note that us-east-1 returns None for the LocaionConstraint so need to deal with this edge case
+
 
     def GetBucketURL(self, Bucket):
         """Get the URL given the bucket name."""
 
-        # First get the location for the bucket
-        bucket_location = self.S3.meta.client.get_bucket_location(Bucket = Bucket.name)
-        BucketRegion = bucket_location['LocationConstraint'] or 'us-east-1'
-        # Note that us-east-1 returns None for the LocaionConstraint so need to deal with this edge case
+        # First get the region for the bucket
+        BucketRegion = self.GetBucketRegion(Bucket.name)
 
         # Verify we have this region in our list and return the corresponding endpoint
         if utils.ValidateRegion(BucketRegion):

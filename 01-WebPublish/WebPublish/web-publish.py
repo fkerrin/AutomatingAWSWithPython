@@ -12,6 +12,8 @@ web-publish automates the process of deploying static websites to AWS
 """
 
 from s3_bucket import BucketHandler
+from domains import DomainHandler
+import utils
 import boto3  # AWS API
 import click  # Command line functionality through function decorators
 
@@ -22,7 +24,7 @@ import click  # Command line functionality through function decorators
 def CLI(profile):
     """Publish website to S3"""  # Docstring is the command description (--help option)
     
-    global AWSSession, bucket_handler
+    global AWSSession, bucket_handler, domain_handler
     """Need global to ensure we modify the global versions and not create new
     variables that would not be accessible to our other functons."""
 
@@ -34,6 +36,7 @@ def CLI(profile):
     AWSSession = boto3.Session(**session_config)
     # Create an instance of the BucketHandler class
     bucket_handler = BucketHandler(AWSSession)
+    domain_handler = DomainHandler(AWSSession)
 
 
 @CLI.command('ListBuckets')  # This string is the command to use with the script
@@ -83,12 +86,31 @@ def SyncWebfilesToS3(path_name, bucket_name):
     return
 
 
+@CLI.command('SetUpDomain')
+@click.argument('domain_name')  # User supplies domain name to setup
+def SetupRoute53Domain(domain_name):
+    """Configure DOMAIN_NAME to point to bucket of the same name."""
+
+    bucket_name = domain_name  # One constraint is that the bucket name matches the domain name
+
+    # Check if the requested zone exists, if not, create it
+    Zone = domain_handler.FindHostedZone(domain_name) \
+	    or domain_handler.CreateHostedZone(domain_name)
+
+    Endpoint = utils.GetEndpoint(bucket_handler.GetBucketRegion(bucket_name))
+
+    ARecord = domain_handler.CreateS3DomainRecord(Zone, domain_name, Endpoint)
+    print(ARecord)
+    return
+
+
 if __name__ == '__main__':
 
     """ Create globaal variables for AWS session and bucket resource to be
    set up and utilised by all functions in the script"""
     AWSSession = None
     bucket_handler = None
+    domain_handler = None
 
     CLI()
     """This delegates control of the functions	to the CLI command group

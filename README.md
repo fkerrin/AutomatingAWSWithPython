@@ -7,3 +7,5 @@ I started this course on 3rd September 2018
 5th September 2018 - added to script to set up S3 bucket, copy index.html and set up permissions and web hosting
 6th September 2018 - added to script to sync files from local repository to S3 bucket
 7th September 2018 - refactored code to separate out functions into a module as class methods
+8-9th September 2018 - removed hardcoding of profile and url and stopped re-uploading of content already on S3
+10-11th September 2018 - setup Route53 domain to point at S3 bucket - needs troubleshooting...
