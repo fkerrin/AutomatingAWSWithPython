@@ -17,9 +17,9 @@ class BucketHandler:
     
     CHUNK_SIZE = 8388608  # Chunk size threshold for S3 multipart uploads
 
-    def __init__(self, session):
+    def __init__(self, Session):
         """Create S3 bucket resource."""
-        self.S3 = session.resource('s3')
+        self.S3 = Session.resource('s3')
         self.TransferConfig = boto3.s3.transfer.TransferConfig(
             multipart_chunksize = self.CHUNK_SIZE, multipart_threshold = self.CHUNK_SIZE)
 		# This sets the multipart chunk size for our transfers - need to use this in S3 uploads
@@ -96,7 +96,7 @@ class BucketHandler:
 
         # Verify we have this region in our list and return the corresponding endpoint
         if utils.ValidateRegion(BucketRegion):
-            return 'http://{}.{}'.format(Bucket.name, utils.GetEndpoint(BucketRegion))
+            return 'http://{}.{}'.format(Bucket.name, utils.GetEndpoint(BucketRegion).WebsiteEndpoint)
         else: return None
 
 		

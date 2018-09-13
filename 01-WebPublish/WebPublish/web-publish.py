@@ -13,6 +13,8 @@ web-publish automates the process of deploying static websites to AWS
 
 from s3_bucket import BucketHandler
 from domains import DomainHandler
+from certificates import CertificateHandler
+from cdn import CDNHandler
 import utils
 import boto3  # AWS API
 import click  # Command line functionality through function decorators
@@ -24,7 +26,7 @@ import click  # Command line functionality through function decorators
 def CLI(profile):
     """Publish website to S3"""  # Docstring is the command description (--help option)
     
-    global AWSSession, bucket_handler, domain_handler
+    global AWSSession, bucket_handler, domain_handler, cert_handler, cdn_handler
     """Need global to ensure we modify the global versions and not create new
     variables that would not be accessible to our other functons."""
 
@@ -37,6 +39,8 @@ def CLI(profile):
     # Create an instance of the BucketHandler class
     bucket_handler = BucketHandler(AWSSession)
     domain_handler = DomainHandler(AWSSession)
+    cert_handler = CertificateHandler(AWSSession)
+    cdn_handler = CDNHandler(AWSSession)
 
 
 @CLI.command('ListBuckets')  # This string is the command to use with the script
@@ -99,9 +103,47 @@ def SetupRoute53Domain(domain_name):
 
     Endpoint = utils.GetEndpoint(bucket_handler.GetBucketRegion(bucket_name))
 
-    ARecord = domain_handler.CreateS3DomainRecord(Zone, domain_name, Endpoint)
-    print(ARecord)
+    domain_handler.CreateS3DomainRecord(Zone, domain_name, Endpoint)
+
+    print("Domain Configured:  htto://{}".format(domain))
+
     return
+
+
+@CLI.command('FindCertificate')
+@click.argument('domain_name')
+def FindCertificate(domain_name):
+    """Find an SSL certificate for the domain."""
+
+    Certificate = cert_handler.GetCertificateForDomain(domain_name)
+
+
+@CLI.command('SetUpCDN')
+@click.argument('domain_name')
+def SetUPCDN(domain_name):
+    """Set up CDN distribution for the site."""
+
+    # Check if we have already have a CDN distribution for the domain
+    CDNDist = cdn_handler.FindDistribution(domain_name)
+    # If none exists we create one
+    if not CDNDist:
+        Cert = cert_handler.GetCertificateForDomain(domain_name)
+        if not Cert:
+            print("Cannot proceed - SSL certificate is required for CloudFront Distribution.")
+            return
+
+        CDNDist = cdn_handler.CreateDistribution(domain_name, Cert)
+        print("Awaiting deployment of CDN distribution....")
+        cdn_handler.AwaitDistributionDeployment(CDNDist)
+
+    # Check if the hosted zone exists, if not, create it
+    Zone = domain_handler.FindHostedZone(domain_name) \
+	    or domain_handler.CreateHostedZone(domain_name)
+
+    # Finally, need to create the CloudFront domain reccord in Route 53
+    domain_handler.CreateCloudFrontDomainRecord(Zone, domain_name, CDNDist['DomainName'])
+
+    print("Domain Configured:  httos://{}".format(domain))
 
 
 if __name__ == '__main__':
@@ -111,6 +153,8 @@ if __name__ == '__main__':
     AWSSession = None
     bucket_handler = None
     domain_handler = None
+    cert_handler = None
+    cdn_handler = None
 
     CLI()
     """This delegates control of the functions	to the CLI command group
