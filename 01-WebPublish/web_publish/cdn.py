@@ -21,11 +21,10 @@ class CDNHandler:
 
         for Page in Paginator.paginate():
             for Item in Page['DistributionList']['Items']:
-#                print(Item)
-                if Item['Aliases']['Quantity']  == 0: return None  # No domains on the distribution
-                for Alias in ['Aliases']['Items']:  # Could be several aliases
+                if Item['Aliases']['Quantity']  == 0: continue  # No domains in this distribution
+                for Alias in Item['Aliases']['Items']:  # Could be several aliases
                     if Alias == DomainName:
-                        return Item['ARN']  # Returns the ARN for the distribution
+                        return Item  # Returns the dict for the distribution
 
         return None  # Didn't find a distribution for the domain
 

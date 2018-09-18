@@ -41,7 +41,7 @@ class DomainHandler:
         return self.Route53Client.create_hosted_zone(
             Name = ZoneName,
             CallerReference = str(uuid4())  # Needs to be a unique string - uuid generates unique codes
-            )
+            )['HostedZone']
 
 
     def CreateS3DomainRecord(self, Zone, DomainName, Endpoint):

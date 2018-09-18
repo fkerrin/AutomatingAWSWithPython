@@ -105,7 +105,7 @@ def SetupRoute53Domain(domain_name):
 
     domain_handler.CreateS3DomainRecord(Zone, domain_name, Endpoint)
 
-    print("Domain Configured:  htto://{}".format(domain))
+    print("Domain Configured:  htto://{}".format(domain_name))
 
     return
 
@@ -143,7 +143,7 @@ def SetUPCDN(domain_name):
     # Finally, need to create the CloudFront domain reccord in Route 53
     domain_handler.CreateCloudFrontDomainRecord(Zone, domain_name, CDNDist['DomainName'])
 
-    print("Domain Configured:  httos://{}".format(domain))
+    print("Domain Configured:  httos://{}".format(domain_name))
 
 
 if __name__ == '__main__':
