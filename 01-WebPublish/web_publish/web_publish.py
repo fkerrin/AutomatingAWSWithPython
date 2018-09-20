@@ -105,17 +105,9 @@ def SetupRoute53Domain(domain_name):
 
     domain_handler.CreateS3DomainRecord(Zone, domain_name, Endpoint)
 
-    print("Domain Configured:  htto://{}".format(domain_name))
+    print("Domain Configured:  http://{}".format(domain_name))
 
     return
-
-
-@CLI.command('FindCertificate')
-@click.argument('domain_name')
-def FindCertificate(domain_name):
-    """Find an SSL certificate for the domain."""
-
-    Certificate = cert_handler.GetCertificateForDomain(domain_name)
 
 
 @CLI.command('SetUpCDN')
@@ -143,7 +135,7 @@ def SetUPCDN(domain_name):
     # Finally, need to create the CloudFront domain reccord in Route 53
     domain_handler.CreateCloudFrontDomainRecord(Zone, domain_name, CDNDist['DomainName'])
 
-    print("Domain Configured:  httos://{}".format(domain_name))
+    print("Domain Configured:  https://{}".format(domain_name))
 
 
 if __name__ == '__main__':

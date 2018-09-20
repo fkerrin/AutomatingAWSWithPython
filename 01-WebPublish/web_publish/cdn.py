@@ -87,6 +87,6 @@ class CDNHandler:
         Waiter = self.CDNClient.get_waiter('distribution_deployed')
 		
         Waiter.wait(Id = Distribution['Id'], WaiterConfig = 
-            {'Delay' : 30, 'MaxAttempts' : 50})
+            {'Delay' : 30, 'MaxAttempts' : 100})
 
         return

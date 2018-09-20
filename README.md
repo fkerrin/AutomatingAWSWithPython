@@ -10,4 +10,5 @@ I started this course on 3rd September 2018
 8-9th September 2018 - removed hardcoding of profile and url and stopped re-uploading of content already on S3
 10-11th September 2018 - setup Route53 domain to point at S3 bucket - needs troubleshooting...
 12-13th September 2018 - setup SSL certificate and CloudFront distribution - needs troubleshooting...
-44-18th September 2018 - completed troubleshooting and created packaging
+14-18th September 2018 - completed troubleshooting and created packaging
+20th September 2018 - rough script for setting up an EC2 instance and giving restricted SSH access and public HTML access

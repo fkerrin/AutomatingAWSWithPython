@@ -40,7 +40,7 @@ class CertificateHandler:
                 if self.CertMatches(Cert['CertificateArn'], DomainName):
                     return Cert['CertificateArn']
 
-        return None  # If we can' get a certificate for this domain
+        return None  # If we can't get a certificate for this domain
 
 
 
