@@ -13,3 +13,4 @@ I started this course on 3rd September 2018
 14-18th September 2018 - completed troubleshooting and created packaging
 20th September 2018 - rough script for setting up an EC2 instance and giving restricted SSH access and public HTML access
 21st September 2018 - rough script for auto-scaing events
+23rd September 2018 - lambda function for Slack notifications on auto-scaling events in AWS

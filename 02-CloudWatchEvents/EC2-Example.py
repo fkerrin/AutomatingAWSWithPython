@@ -38,40 +38,43 @@ if __name__ == '__main__':
     ImageList = list(EC2.images.filter(Owners = ['amazon'], Filters = Filters))
     MyImage = ImageList[0]  # Should only get one result from this filter
 
-    Instances = EC2.create_instances(ImageId = MyImage.id, MinCount=1, MaxCount=1, InstanceType='t2.micro', KeyName=KeyPair.key_name)
+    # Want the instance to be a simple website
+    InstanceBootstrap = """
+	    #!/bin/bash
+        mkdir /var/www
+        mkdir /var/www/html
+        cd /var/www/html/
+        echo '<html><head>Quick and Dirty Website...</head></html>' > index.html
+        yum update -y
+        yum install -y httpd
+        service httpd start
+        chkconfig httpd on"""
+ 
+    MySecurityGroup = EC2.create_security_group(Description = 'WEB and SSH Access', GroupName = 'AWSAutomation')
+    # Now want to add SSH access (restricted to my IP) and HTTP access (public) and add the instance to this SG
+    # Note my public IP will change so check and insert actual IP before running this
+    MySecurityGroup.authorize_ingress(CidrIp = '51.37.220.103/32', FromPort = 22, ToPort = 22, IpProtocol= 'tcp')
+    MySecurityGroup.authorize_ingress(CidrIp = '0.0.0.0/0', FromPort = 80, IpProtocol = 'tcp', ToPort = 80)
+    SGID = MySecurityGroup.group_id
+	
+    Instances = EC2.create_instances(ImageId = MyImage.id, MinCount=1, MaxCount=1, InstanceType = 't2.micro',
+        KeyName=KeyPair.key_name, UserData = InstanceBootstrap, SecurityGroupIds = [SGID])
 
     MyInstance = Instances[0]  # Can create multiple EC2 but we only created one
-
-    SGID = MyInstance.security_groups[0]['GroupId']
-    SG = EC2.SecurityGroup(SGID)  # Create a security group object from the SG ID from the instance
-
-    # Default security group has no access - want to add SSH access from a single IP - my public IP
-    SG.authorize_ingress(CidrIp = '51.37.169.50/32', FromPort = 22, ToPort = 22, IpProtocol= 'tcp')
-    # Note my public IP will change so check and insert actual IP before running this
-
+    MyInstance.wait_until_running()  # Ensure the instance has started up - otherwise won't be able to query
+	
     MyInstance.reload()  # Refresh the instance parameters - otherwise will not return data
     InstanceDNSName = MyInstance.public_dns_name
     InstanceIP = MyInstance.public_ip_address
     # Can use either of the above to SSH into the instance - ec2-user@InstanceDNSName or e2-user@InstanceIP
 
-    # Also want to add HTTP access from any public IP
-    SG.authorize_ingress(CidrIp = '0.0.0.0/0', FromPort = 80, IpProtocol = 'tcp', ToPort = 80)
-
     # Print out the access details
     print('Public IP is:  {},  Public DNS is:  {}'.format(InstanceIP, InstanceDNSName))
-
-    """Now SSH into the instance and set up as a webbserver:
-    sudo yum update -y
-    sudo install httpd -y
-    sudo service httpd start
     
-    Then put an index,html in /var/www/html/ and access from browser using public IP or DNS name"""
-
 
 """Some ways to improve this script:
--   Include a bootstrap script in the EC2 creation - start with #!/bin/bash plus above script - include as UserData
--   Don't add SSH and HTTP to default security group - create a separate SG and attach to instance
 -   Check if key pair and security group exist and, if not, create them
--   Include auto-scaling as part of this script with min=max=1 to give resilience
+-   Include auto-scaling as part of this script with min=max=1 to give resilience - multi-AZ
 -   Add a load balancer
+-   Make the website more generic - pull the content from S3 as part of bootstrap
 """

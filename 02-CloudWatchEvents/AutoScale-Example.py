@@ -13,12 +13,14 @@ if __name__ == '__main__':
     ASGNames = []
     for Item in ASGroups['AutoScalingGroups']:
         ASGNames.append(Item['AutoScalingGroupName'])  # Creates a list of the autoscaling group names
+    print('Auto-Scaling Groups found:  {}'.format(ASGNames))
 
     # The following code similarly creates a list of autoscaling policies
     ASPolicies = []
     for Item in ASClient.describe_policies()['ScalingPolicies']:
         ASPolicies.append(Item['PolicyName'])
+    print('Auto-Scaling Policies found:  {}'.format(ASPolicies))
 
     # Now can scale up and scale down using script commands - policies returned were ScaleUp and ScaleDown
-    ASClient.execute_policy(AutoScalingGroupName = 'TestingPython', PolicyName = 'ScaleUp')
-    ASClient.execute_policy(AutoScalingGroupName = 'TestingPython', PolicyName = 'ScaleDown')
+    ASClient.execute_policy(AutoScalingGroupName = ASGNames[0], PolicyName = 'ScaleUp')
+#    ASClient.execute_policy(AutoScalingGroupName = ASGNames[0], PolicyName = 'ScaleDown')
