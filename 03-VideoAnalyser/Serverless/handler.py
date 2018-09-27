@@ -133,8 +133,17 @@ def label_detection(event, context):  # This is the Lambda handler for label ret
 
         RekognitionJobID = RekognitionJob['JobId']
 
-        # get_label_detection() returns max 100 labels so need a handler to get all if over 1000
+        # get_label_detection() returns max 1000 labels so need a handler to get all if over 1000
         VideoLabels = get_video_labels(RekognitionJobID)
         update_database(RekognitionJob, VideoLabels)
 
     return
+
+
+"""Some possible ways to improve this script:
+-  Further decoupling - all labels are retrieved in one call to label_detection()
+   and this function handles the paging between calls to Rekognition get_video_labels()
+   could use separate lambda function for each call - this would avoid hitting the 5min
+   limit on lambda for a very long video.
+-  Deal with floats better than converting to string
+-  Write a function to retrieve thee data and present it to the user
