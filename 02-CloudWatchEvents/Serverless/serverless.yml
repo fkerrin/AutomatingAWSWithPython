@@ -23,11 +23,11 @@ provider:
   stage: dev
   profile: ${file(../config.dev.json):Notifier.Profile}
   region: ${file(../config.dev.json):Notifier.Region}
-#  profile: ${file(../config.${self.provider.stage}.json):Notifier.Profile}
-#  region: ${file(../config.${self.provider.stage}.json):Notifier.Region}
+#  profile: ${file(../config.${self:provider.stage}.json):Notifier.Profile}
+#  region: ${file(../config.${self:provider.stage}.json):Notifier.Region}
   environment:
     SLACK_WEBHOOK : ${file(../config.dev.json):Notifier.SlackWebhookURL}
-#    SLACK_WEBHOOK : ${file(../config.${self.provider.stage}.json):Notifier.SlackWebhookURL}
+#    SLACK_WEBHOOK : ${file(../config.${self:provider.stage}.json):Notifier.SlackWebhookURL}
 
 # you can overwrite defaults here
 #  stage: dev

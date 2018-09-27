@@ -5,9 +5,6 @@ if __name__ == '__main__':
     AWSSession = boto3.Session(profile_name = 'PythonUser')
     ASClient = AWSSession.client('autoscaling')
 
-    ASClient.describe_auto_scaling_groups()
-    ASClient.describe_policies()
-
     ASGroups = ASClient.describe_auto_scaling_groups()
     # This returns a dict in which there is a list of groups under the 'AutoScalingGroups' key
     ASGNames = []

@@ -17,10 +17,10 @@ if __name__ == '__main__':
     KeyPair = EC2.create_key_pair(KeyName = 'AutomateAWS')  # Create a Key Pair on AWS for our instance
     KeyPath = 'AutomateAWS.pem'  # What we will save the private key as locally
 
-    KeyPair.key_material  # This gives the private part of the key pair
+    PrivateKey = KeyPair.key_material  # This gives the private part of the key pair
 
     with open(KeyPath, 'w') as KeyFile:
-        KeyFile.write(KeyPair.key_material)  # Save the private key locally
+        KeyFile.write(PrivateKey)  # Save the private key locally
 
     """SSH terminal may reject a key that has open permissions so we need to
     limit file permissions for the key to red/write access for local user only"""
@@ -57,8 +57,8 @@ if __name__ == '__main__':
     MySecurityGroup.authorize_ingress(CidrIp = '0.0.0.0/0', FromPort = 80, IpProtocol = 'tcp', ToPort = 80)
     SGID = MySecurityGroup.group_id
 	
-    Instances = EC2.create_instances(ImageId = MyImage.id, MinCount=1, MaxCount=1, InstanceType = 't2.micro',
-        KeyName=KeyPair.key_name, UserData = InstanceBootstrap, SecurityGroupIds = [SGID])
+    Instances = EC2.create_instances(ImageId = MyImage.id, MinCount = 1, MaxCount = 1, InstanceType = 't2.micro',
+        KeyName = KeyPair.key_name, UserData = InstanceBootstrap, SecurityGroupIds = [SGID])
 
     MyInstance = Instances[0]  # Can create multiple EC2 but we only created one
     MyInstance.wait_until_running()  # Ensure the instance has started up - otherwise won't be able to query

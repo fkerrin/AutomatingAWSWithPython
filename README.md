@@ -14,3 +14,4 @@ I started this course on 3rd September 2018
 20th September 2018 - rough script for setting up an EC2 instance and giving restricted SSH access and public HTML access
 21st September 2018 - rough script for auto-scaing events
 23rd September 2018 - lambda function for Slack notifications on auto-scaling events in AWS
+27th September 2018 - lmbda functions to send jobs to Rekognition and store results in DynamoDB for videos uploaded to S3

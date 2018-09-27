@@ -1,0 +1,133 @@
+
+service: VideoAnalyser # NOTE: update this with your service name
+
+provider:
+  name: aws
+  runtime: python3.6
+  profile: ${file(../config.dev.json):VideoAnalyser.Profile}
+  iamRoleStatements:  # THese are the permissions for the Lamda functions
+    - Effect: Allow
+      Action:
+        - Rekognition:*
+      Resource: '*'
+    
+    - Effect: Allow
+      Action:
+        - s3:GetObject
+# Need to construct the ARN for the bucket - use custom variable (see below)
+      Resource:
+        Fn::Join:
+          - ""
+          - - ${self:custom.VideoBucketARN}
+            - /*  # i.e. give access to Lambda to all objects in this bucket
+
+    - Effect: Allow
+      Action:
+# Want the Lambda function to be able to pass permissions (via role) to Rekognition
+        - iam:GetRole
+        - iam:PassRole
+      Resource:  # Can get the role ARN via the GetAtt function as it is being created here
+        Fn::GetAtt:
+          - RekognitionSNSPublishRole
+          - Arn
+    
+    - Effect: Allow
+      Action:
+        - dynamodb:PutItem
+#        - dynamodb:GetItem
+#        - dynamodb:UpdateItem
+      Resource:
+        Fn::GetAtt:
+          - VideoDBTable
+          - Arn
+
+
+  environment:
+    REKOGNITION_TOPIC_ARN: ${self:custom.RekognitionSNSTopicARN}
+    REKOGNITION_ROLE_ARN:
+      Fn::GetAtt:
+        - RekognitionSNSPublishRole
+        - Arn
+    MINIMUM_CONFIDENCE_LEVEL: ${file(../config.dev.json):VideoAnalyser.MinConfidenceLevel}  # Rekognition won't return labels below this confidence
+    DB_TABLE_NAME: ${file(../config.dev.json):VideoAnalyser.VideoDBTable}
+
+custom:
+# ARN constructed from the below separated by colons
+  VideoBucketARN:
+    Fn::Join:
+      - ':'
+      - - arn
+        - aws
+        - s3
+        - ''
+        - ''
+        - ${file(../config.dev.json):VideoAnalyser.VideoBucket}  # Bucket name from config file
+
+  RekognitionSNSTopicARN:
+    Fn::Join:
+      - ':'
+      - - arn
+        - aws
+        - sns
+        - Ref: AWS::Region
+        - Ref: AWS::AccountId
+        - LabelDetectionTopic  # Name of SNS topic created further down (in functions section)
+
+  DBVideoTableName: ${file(../config.dev.json):VideoAnalyser.VideoDBTable}
+
+
+functions:
+  StartVideoAnalysis:
+    handler: handler.start_video_analysis
+    events:
+      - s3:  # Note 2 indentations below... Not sure why...
+          bucket: ${file(../config.dev.json):VideoAnalyser.VideoBucket}
+          event: s3:ObjectCreated:*
+          rules:
+            - suffix: mp4  # Will be analysing MP4 files
+  LabelDetection:
+    handler: handler.label_detection
+    events:
+      - sns: LabelDetectionTopic  # Serverless will create this topic
+
+# Want to create a role that can be assumed by Rekognition to access our resources (SNS)
+resources:
+  Resources:  # Note capital "R"
+    RekognitionSNSPublishRole:  # This will be the name of the role
+      Type: AWS::IAM::Role
+      Properties:  # This is the type of role - i.e. assumed by a resource
+        AssumeRolePolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Principal:
+                Service:
+                  - rekognition.amazonaws.com
+              Action:
+                - sts:AssumeRole
+        Policies:  # Describe the actual permissions to be given\
+          - PolicyName: RekognitionSNSPublishPolicy
+            PolicyDocument:
+              Version: '2012-10-17'
+              Statement:
+                - Effect: Allow
+                  Action:
+                    - sns:Publish
+                  Resource: ${self:custom.RekognitionSNSTopicARN}
+
+    VideoDBTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        AttributeDefinitions:
+          -
+            AttributeName: VideoID
+            AttributeType: S
+        KeySchema:
+          -
+            AttributeName: VideoID
+            KeyType: HASH
+        ProvisionedThroughput:
+          ReadCapacityUnits: 1
+          WriteCapacityUnits: 1
+        TableName: ${self:custom.DBVideoTableName}
+

@@ -1,0 +1,7 @@
+{
+    "VideoAnalyser" : {
+        "Profile" : "PythonUser",
+        "VideoBucket" : "fkerrin-video-bucket",
+        "VideoDBTable" : "VideoAnalysis"
+    }
+}
