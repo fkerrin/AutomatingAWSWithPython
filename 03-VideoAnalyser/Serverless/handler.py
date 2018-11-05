@@ -87,6 +87,8 @@ def update_database(JobData, Labels):
     DBData['VideoName'] = JobData['Video']['S3ObjectName']
     DBData['S3Bucket'] = JobData['Video']['S3Bucket']
     DBData['Labels'] = []
+
+    print('Total number of labels detected was {}'.format(len(Labels)))
 	
 	# Now want to create a list of unique labels, number of occurrences, time of occurrences and average confidence
     for Label in Labels:
@@ -146,4 +148,4 @@ def label_detection(event, context):  # This is the Lambda handler for label ret
    could use separate lambda function for each call - this would avoid hitting the 5min
    limit on lambda for a very long video.
 -  Deal with floats better than converting to string
--  Write a function to retrieve thee data and present it to the user
+-  Write a function to retrieve thee data and present it to the user"""
