@@ -1,5 +1,7 @@
 *.pem
-*/Pipfile.lock
+Pipfile.lock
+requirements.txt
+
 
 config.dev.json
 node_modules/
